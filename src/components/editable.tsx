@@ -1,11 +1,13 @@
 import {
   ButtonHTMLAttributes,
   Dispatch,
+  ForwardedRef,
   InputHTMLAttributes,
   PropsWithChildren,
   ReactNode,
   SetStateAction,
   createContext,
+  forwardRef,
   useContext,
   useState,
 } from 'react'
@@ -30,10 +32,13 @@ const Root = ({ children }: PropsWithChildren) => {
 }
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {}
-const Input = (props: InputProps) => {
+const Input = forwardRef(function Input(
+  props: InputProps,
+  ref: ForwardedRef<HTMLInputElement>
+) {
   const isEditing = useEdittableContext()
-  return <>{isEditing ? <input {...props} /> : null} </>
-}
+  return <>{isEditing ? <input {...props} ref={ref} /> : null} </>
+})
 
 const Preview = ({ children }: PropsWithChildren) => {
   const isEditing = useEdittableContext()
@@ -68,10 +73,19 @@ const Cancel = ({ children }: PropsWithChildren) => {
 
 const Submit = ({
   children,
+  onClick,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement>) => {
+  const setIsEditing = useEdittableSetContext()
   return (
-    <button type="submit" {...props}>
+    <button
+      type="submit"
+      {...props}
+      onClick={(e) => {
+        onClick?.(e)
+        setIsEditing(false)
+      }}
+    >
       {children}
     </button>
   )

@@ -1,73 +1,176 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
-import { Editable, Loading, TodoListForm } from './components'
-import { TodoListEntity, todoListProvider } from './api'
+import { Editable, Loading } from './components'
+import { TodoListEntity, TodoListUpdateRequest, todoListProvider } from './api'
 
 function App() {
   const [todoList, setTodoList] = useState<TodoListEntity[]>()
-  const [loading, setLoading] = useState(true)
+  const [isTodoListloading, setisTodoListLoading] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
+  const [isCreatingloading, setIsCreatingLoading] = useState(false)
+  const createInputRef = useRef<HTMLInputElement>(null)
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false)
+  const [isEditLoading, setIsEditLoading] = useState(false)
+  const [isCompleteLoading, setIsCompleteLoading] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
+    setisTodoListLoading(true)
+    todoListProvider
+      .getTodoList()
+      .then((data) => {
+        setTodoList(data)
+      })
+      .finally(() => {
+        setisTodoListLoading(false)
+      })
+  }, [])
+
+  useEffect(() => {
     todoListProvider.getTodoList().then((data) => {
-      setLoading(false)
       setTodoList(data)
     })
-  }, [])
-  /**
-   * TODO
-   * - 로딩인디케이터
-   * - 추가, 수정, 삭제 비동기 로직 작성
-   */
+  }, [isCreatingloading, isDeleteLoading, isEditLoading, isCompleteLoading])
+
+  const createTodo = async () => {
+    if (!createInputRef.current?.value) return
+
+    setIsCreating(false)
+    setIsCreatingLoading(true)
+    await todoListProvider.createTodo({
+      description: createInputRef.current?.value,
+    })
+    setIsCreatingLoading(false)
+  }
+
+  const editTodo = async ({ id }: { id: TodoListEntity['id'] }) => {
+    if (!editInputRef.current?.value) return
+
+    setIsEditLoading(true)
+    await todoListProvider.updateTodo({
+      id,
+      description: editInputRef.current?.value,
+    })
+    setIsEditLoading(false)
+  }
+
+  const completeTodo = async ({ id, isComplete }: TodoListUpdateRequest) => {
+    setIsCompleteLoading(true)
+    await todoListProvider.updateTodo({
+      id: id,
+      isComplete,
+    })
+    setIsCompleteLoading(false)
+  }
+
+  const deleteTodo = async ({ id }: { id: TodoListEntity['id'] }) => {
+    setIsDeleteLoading(true)
+    await todoListProvider.deleteTodo({ id })
+    setIsDeleteLoading(false)
+  }
 
   return (
     <>
       <h1>오늘 할 일</h1>
       <section>
-        {loading ? (
+        {isTodoListloading ? (
           <Loading />
         ) : (
-          <ul>
-            {todoList
-              ?.filter((todo) => !todo.isArchived)
-              .map((todo) => {
-                return (
-                  <li key={todo.id}>
-                    <Editable.Root>
-                      <Editable.Input type="text" />
-                      <Editable.Preview>
-                        <input type="checkbox" checked={todo.isComplete} />
-                        <Editable.EditTrigger>
-                          <span>{todo.description}</span>
-                        </Editable.EditTrigger>
-                      </Editable.Preview>
-                      <Editable.Control>
-                        {(props) => (
-                          <>
-                            {props.isEditing ? (
-                              <>
-                                <Editable.Cancel>취소</Editable.Cancel>
-                                <Editable.Submit>삭제</Editable.Submit>
-                                <Editable.Submit>저장</Editable.Submit>
-                              </>
-                            ) : null}
-                          </>
-                        )}
-                      </Editable.Control>
-                    </Editable.Root>
-                  </li>
-                )
-              })}
+          <>
+            <ul>
+              {todoList
+                ?.filter((todo) => !todo.isArchived)
+                .map((todo) => {
+                  return (
+                    <li key={todo.id}>
+                      <Editable.Root>
+                        <Editable.Input
+                          type="text"
+                          defaultValue={todo.description}
+                          autoFocus
+                          ref={editInputRef}
+                        />
+                        <Editable.Preview>
+                          <input
+                            type="checkbox"
+                            defaultChecked={todo.isComplete}
+                            onChange={(e) =>
+                              completeTodo({
+                                id: todo.id,
+                                isComplete: e.target.checked,
+                              })
+                            }
+                          />
+                          <Editable.EditTrigger>
+                            <span>{todo.description}</span>
+                          </Editable.EditTrigger>
+                        </Editable.Preview>
+                        <Editable.Control>
+                          {(props) => (
+                            <>
+                              {props.isEditing ? (
+                                <>
+                                  <Editable.Cancel>취소</Editable.Cancel>
+                                  <Editable.Submit
+                                    onClick={() => deleteTodo({ id: todo.id })}
+                                  >
+                                    삭제
+                                  </Editable.Submit>
+                                  <Editable.Submit
+                                    onClick={() => editTodo({ id: todo.id })}
+                                  >
+                                    저장
+                                  </Editable.Submit>
+                                </>
+                              ) : null}
+                            </>
+                          )}
+                        </Editable.Control>
+                      </Editable.Root>
+                    </li>
+                  )
+                })}
 
-            <TodoListForm />
-          </ul>
+              {isCreatingloading ? (
+                <Loading />
+              ) : (
+                <>
+                  {isCreating ? (
+                    <li>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          createTodo()
+                        }}
+                      >
+                        <input type="text" ref={createInputRef} autoFocus />
+
+                        <button
+                          type="button"
+                          onClick={() => setIsCreating(false)}
+                        >
+                          취소
+                        </button>
+                        <button type="submit">추가</button>
+                      </form>
+                    </li>
+                  ) : (
+                    <button type="button" onClick={() => setIsCreating(true)}>
+                      오늘의 할일 추가하기
+                    </button>
+                  )}
+                </>
+              )}
+            </ul>
+          </>
         )}
       </section>
 
       <h1>아카이브</h1>
       <section>
         <ul>
-          {loading ? (
+          {isTodoListloading ? (
             <Loading />
           ) : (
             <>

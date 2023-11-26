@@ -7,9 +7,20 @@ export interface TodoListEntity {
   isArchived: boolean
   isComplete: boolean
 }
+export interface TodoListCreateRequest {
+  description: string
+}
+export interface TodoListUpdateRequest {
+  id: string
+  description?: string
+  isComplete?: boolean
+}
+export interface TodoListDeleteRequest {
+  id: string
+}
 
 function TodoListProvider() {
-  const todolist: TodoListEntity[] = [
+  let todolist: TodoListEntity[] = [
     {
       id: uuidv4(),
       description: '동료에게 인정과 칭찬을 전달하세요.',
@@ -34,9 +45,30 @@ function TodoListProvider() {
       JSON.parse(JSON.stringify(todolist))
     )
   }
-  function createTodo(request) {}
-  function updateTodo(request) {}
-  function deleteTodo(request) {}
+  async function createTodo(request: TodoListCreateRequest) {
+    await waitHalfSecond(() => {
+      todolist.push({
+        id: uuidv4(),
+        isArchived: false,
+        isComplete: false,
+        ...request,
+      })
+    })
+  }
+  async function updateTodo(request: TodoListUpdateRequest) {
+    await waitHalfSecond(() => {
+      todolist = todolist.map((todo) =>
+        todo.id === request.id ? { ...todo, ...request } : todo
+      )
+    })
+  }
+  async function deleteTodo(request: TodoListDeleteRequest) {
+    await waitHalfSecond(() => {
+      todolist = todolist.map((todo) =>
+        todo.id === request.id ? { ...todo, isArchived: true } : todo
+      )
+    })
+  }
 
   return {
     getTodoList,
