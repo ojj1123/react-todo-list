@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { waitHalfSecond } from './waitHalfSecond'
+import { waitRandomSecond } from '.'
 
 export interface TodoListEntity {
   id: string
@@ -41,12 +41,12 @@ function TodoListProvider() {
     },
   ]
   async function getTodoList(): Promise<TodoListEntity[]> {
-    return await waitHalfSecond<TodoListEntity[]>(() =>
+    return await waitRandomSecond<TodoListEntity[]>(() =>
       JSON.parse(JSON.stringify(todolist))
     )
   }
   async function createTodo(request: TodoListCreateRequest) {
-    await waitHalfSecond(() => {
+    await waitRandomSecond(() => {
       todolist.push({
         id: uuidv4(),
         isArchived: false,
@@ -56,14 +56,14 @@ function TodoListProvider() {
     })
   }
   async function updateTodo(request: TodoListUpdateRequest) {
-    await waitHalfSecond(() => {
+    await waitRandomSecond(() => {
       todolist = todolist.map((todo) =>
         todo.id === request.id ? { ...todo, ...request } : todo
       )
     })
   }
   async function deleteTodo(request: TodoListDeleteRequest) {
-    await waitHalfSecond(() => {
+    await waitRandomSecond(() => {
       todolist = todolist.map((todo) =>
         todo.id === request.id ? { ...todo, isArchived: true } : todo
       )
