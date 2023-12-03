@@ -16,5 +16,7 @@
 
 ## 선택 요구 사항
 
-- [ ] 테스트 코드 작성
 - [ ] 비동기 로직 리팩터링
+  - [x] custom hook (useFetch, useLoading)
+  - [ ] useState -> useReducer
+- [ ] 테스트 코드 작성
