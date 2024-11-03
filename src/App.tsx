@@ -1,10 +1,23 @@
-import { useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import './App.css'
 import { Loading, TodoItem } from './components'
 import { todoListProvider } from './api'
 import { useFetch, useLoading } from './hooks'
 
-function App() {
+const About = () => {
+  return <>about</>
+}
+const Mypage = () => {
+  return <>Mypage</>
+}
+
+const Home = () => {
   const { data: todoList, isLoading: isTodoListloading, refetch } = useFetch()
 
   const [isCreating, setIsCreating] = useState(false)
@@ -22,7 +35,6 @@ function App() {
       await refetch()
     })
   }
-
   return (
     <>
       <h1>오늘 할 일</h1>
@@ -98,5 +110,62 @@ function App() {
     </>
   )
 }
+const routes = [
+  { path: '/', component: <Home /> },
+  { path: '/about', component: <About /> },
+  { path: '/mypage', component: <Mypage /> },
+]
+
+function App() {
+  const [path, setPath] = useState('/')
+
+  useLayoutEffect(() => {
+    setPath(window.location.pathname)
+  }, [])
+
+  useEffect(() => {
+    const handler = () => {
+      console.log('popstate', window.location.pathname)
+      setPath(window.location.pathname)
+    }
+
+    // NOTE: popstate 이벤트: 뒤로가기/앞으로가기 할 때 발생하는 이벤트
+    window.addEventListener('popstate', handler)
+    return () => window.removeEventListener('popstate', handler)
+  }, [])
+
+  const navigate = useCallback(
+    (url: string, replace: boolean = false) => {
+      if (path === url) return
+
+      if (replace) {
+        window.history.replaceState(null, null, url)
+      } else {
+        window.history.pushState(null, null, url)
+      }
+      setPath(url)
+    },
+    [path]
+  )
+
+  return (
+    <>
+      <button type="button" onClick={() => navigate('/')}>
+        home
+      </button>
+      <button type="button" onClick={() => navigate('/about')}>
+        about
+      </button>
+      <button type="button" onClick={() => navigate('/mypage', true)}>
+        mypage
+      </button>
+
+      {routes.find((route) => route.path === path)?.component || <>NOT FOUND</>}
+    </>
+  )
+}
+
+// 현재 path
+// 버튼 누르면 routes.component 렌더링
 
 export default App
