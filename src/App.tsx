@@ -1,20 +1,18 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useRef, useState } from 'react'
 import './App.css'
 import { Loading, TodoItem } from './components'
 import { todoListProvider } from './api'
 import { useFetch, useLoading } from './hooks'
+import { Link, Route, Router } from './components/router'
 
-const About = () => {
-  return <>about</>
-}
-const Mypage = () => {
-  return <>Mypage</>
+function App() {
+  return (
+    <Router>
+      <Route path="/" component={Home} />
+      <Route path="/mypage" component={MyPage} />
+      <Route path="/about" component={About} />
+    </Router>
+  )
 }
 
 const Home = () => {
@@ -38,6 +36,7 @@ const Home = () => {
   return (
     <>
       <h1>오늘 할 일</h1>
+      <Link to="/mypage">My page</Link>
       <section>
         {isTodoListloading ? (
           <Loading />
@@ -110,62 +109,23 @@ const Home = () => {
     </>
   )
 }
-const routes = [
-  { path: '/', component: <Home /> },
-  { path: '/about', component: <About /> },
-  { path: '/mypage', component: <Mypage /> },
-]
 
-function App() {
-  const [path, setPath] = useState('/')
-
-  useLayoutEffect(() => {
-    setPath(window.location.pathname)
-  }, [])
-
-  useEffect(() => {
-    const handler = () => {
-      console.log('popstate', window.location.pathname)
-      setPath(window.location.pathname)
-    }
-
-    // NOTE: popstate 이벤트: 뒤로가기/앞으로가기 할 때 발생하는 이벤트
-    window.addEventListener('popstate', handler)
-    return () => window.removeEventListener('popstate', handler)
-  }, [])
-
-  const navigate = useCallback(
-    (url: string, replace: boolean = false) => {
-      if (path === url) return
-
-      if (replace) {
-        window.history.replaceState(null, null, url)
-      } else {
-        window.history.pushState(null, null, url)
-      }
-      setPath(url)
-    },
-    [path]
-  )
-
+function MyPage() {
   return (
     <>
-      <button type="button" onClick={() => navigate('/')}>
-        home
-      </button>
-      <button type="button" onClick={() => navigate('/about')}>
-        about
-      </button>
-      <button type="button" onClick={() => navigate('/mypage', true)}>
-        mypage
-      </button>
-
-      {routes.find((route) => route.path === path)?.component || <>NOT FOUND</>}
+      <h1>My Page</h1>
+      <Link to="/about">about</Link>
     </>
   )
 }
 
-// 현재 path
-// 버튼 누르면 routes.component 렌더링
+function About() {
+  return (
+    <>
+      <h1>About page</h1>
+      <Link to="/">home</Link>
+    </>
+  )
+}
 
 export default App
